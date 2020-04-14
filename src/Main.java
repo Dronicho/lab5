@@ -1,3 +1,4 @@
+import config.Config;
 import controllers.Controller;
 import controllers.ControllerImpl;
 import models.*;
@@ -17,6 +18,7 @@ import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) throws FileNotFoundException {
+        Config.isVerbose = true;
         Repository repository = new RepositoryImpl(new File("test.csv"));
         Service service = new ServiceImpl(repository);
         Controller controller = new ControllerImpl(service);

@@ -1,6 +1,8 @@
 package models;
 
 import persistance.CsvSerilizable;
+import rules.NotEmpty;
+import rules.NotNull;
 
 import java.time.LocalDateTime;
 

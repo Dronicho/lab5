@@ -27,6 +27,9 @@ public class ControllerImpl implements Controller{
      * сканнер для считывания команд(Из System.in или из файла
      */
     private Scanner scanner;
+    /**
+     * история)
+     */
     private ArrayList<String> history = new ArrayList<>();
 
     public ControllerImpl(Service service) {
@@ -36,8 +39,10 @@ public class ControllerImpl implements Controller{
 
     @Override
     public void startListening() {
+        System.out.println("Введите команду");
         while (scanner.hasNext()) {
             execute(scanner.nextLine());
+            System.out.println("Введите команду");
         }
     }
 
@@ -57,13 +62,16 @@ public class ControllerImpl implements Controller{
             }
             return;
         } else if(args[0].equals("history")) {
-            System.out.println("history");
+            if (history.size() < 7) {
+                System.out.println(history);
+            } else {
+                System.out.println(history.subList(history.size()-7, history.size()));
+            }
             return;
         }
         try {
             Command cmd = (Command) Class.forName("commands." + translateCommand(args[0]))
                     .getConstructor(Service.class, Scanner.class).newInstance(service, scanner);
-            System.out.println(Arrays.toString(args));
             try {
                 cmd.execute(Arrays.copyOfRange(args, 1, args.length));
             } catch (IllegalArgumentException e) {

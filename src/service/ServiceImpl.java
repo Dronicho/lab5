@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 public class ServiceImpl implements Service{
     private final Repository repository;
     private String helpInfo = "history : вывести последние 7 команд (без их аргументов)\n" +
-            "execute_script file_name : считать и исполнить скрипт из указанного файла. В скрипте содержатся команды в таком же виде, в котором их вводит пользователь в интерактивном режиме.";
+            "execute_script file_name : считать и исполнить скрипт из указанного файла. В скрипте содержатся команды в таком же виде, в котором их вводит пользователь в интерактивном режиме.\n";
     private boolean verbose = true;
 
     {

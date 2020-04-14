@@ -1,6 +1,7 @@
 package models;
 
 import persistance.CsvSerilizable;
+import rules.NotNull;
 
 public class Coordinates implements CsvSerilizable {
     private float x;

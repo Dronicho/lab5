@@ -1,18 +1,14 @@
 package repository;
 
+import exceptions.CheckFailed;
 import exceptions.StopReadingException;
 import models.*;
+import rules.*;
 
-import java.io.FileNotFoundException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 
@@ -28,38 +24,47 @@ public class MovieReader {
 
     /**
      * метод для считывания поля, с возможностью повторного ввода, если пользователь ошибся
+     *
      * @param fieldName подсказка для пользователя
-     * @param callback метод, которым считываем поле(scanner::<methodName>)
+     * @param callback  метод, которым считываем поле(scanner::<methodName>)
      * @return возвращает объект, поэтому надо кастить в нужный тип
      * @throws StopReadingException выбрасывается, если пользователь ввел break, остановка считывания
      */
-    private Object readField(String fieldName, Function<Scanner, Object> callback) throws StopReadingException {
+    private <T> T readField(String fieldName, Function<String, T> callback, Rule... rules) throws StopReadingException {
         if (verbose) {
             System.out.println("Введите " + fieldName);
         }
-        Object res;
+        String res;
+        T val;
         while (true) {
             try {
-                res = callback.apply(scanner);
+                res = scanner.nextLine();
                 if (res.equals("break")) {
                     throw new StopReadingException("Отмена");
                 }
+                for (Rule rule : rules) {
+                        rule.check(res);
+                }
+                if (res.equals("")) {
+                    return null;
+                }
+                val = callback.apply(res);
                 break;
-            } catch (IllegalArgumentException e) {
-                scanner.nextLine();
+            } catch (CheckFailed e) {
                 if (verbose) {
                     System.out.println(e.getMessage());
+                }
+            } catch (IllegalArgumentException | NoSuchElementException e) {
+                if (verbose) {
                     System.out.println("Попробуйте еще раз");
                 }
-            } catch (NoSuchElementException e) {
-                throw new StopReadingException("неверный ввод");
             }
         }
-        return res;
+
+        return val;
     }
 
     /**
-     *
      * @param scanner Сканнер с которого считывать
      * @param verbose елси true выводит подсказки для пользователя
      * @return Movie считанные из потока
@@ -68,8 +73,9 @@ public class MovieReader {
     public Movie read(Scanner scanner, Boolean verbose) throws StopReadingException {
         this.scanner = scanner;
         this.verbose = verbose;
+
         return new Movie(
-                readName("название фильма", false),
+                readName(),
                 readCoordinates(),
                 readOscars(),
                 readTotalBoxOffice(),
@@ -78,59 +84,46 @@ public class MovieReader {
                 readPerson()
         );
     }
-
-    /**
-     * метод для считывания строки
-     * @param fieldName подсказка для пользователя
-     * @param leftOver нужно ли переместить курсор на новую строку
-     *                 допустим в строке int и мы вызываем scanner.readInt()
-     *                 before readInt: _intValue
-     *                 after readInt: intValue_ - курсор не переместился на новую строку, поэтому дальнейший вызов
-     *                 scanner.nextLine() вернет пустую строку, поэтому нужно вызвать nextLine() еще раз.
-     * @return
-     * @throws StopReadingException
-     */
-    public String readName(String fieldName, Boolean leftOver) throws StopReadingException {
-        if (leftOver) scanner.nextLine();
-        return (String) this.readField(fieldName, Scanner::nextLine);
-    }
     // Далее методы для считываения конкретного поля
+
+    public String readName() throws StopReadingException {
+        return readField("название фильма", (e) -> e, new NotEmpty()); // костыль
+    }
+
     public Coordinates readCoordinates() throws StopReadingException {
-        Coordinates coordinates = new Coordinates(
-                (float) readField("Х координата", Scanner::nextFloat),
-                (Long) readField("Y координата", Scanner::nextLong)
+        return new Coordinates(
+                readField("Х координата", Float::parseFloat, new Max(961)),
+                readField("Y координата", Long::parseLong, new NotNull())
         );
-        return coordinates;
     }
 
     public Long readOscars() throws StopReadingException {
-        return (Long) readField("количество оскаров", Scanner::nextLong);
+        return readField("количество оскаров", Long::parseLong, new NotNull(), new Min(0));
     }
 
     public int readTotalBoxOffice() throws StopReadingException {
-        return (int) readField("сборы в мире", Scanner::nextInt);
+        return readField("сборы в мире", Integer::parseInt, new Min(0));
     }
 
     public int readUsaBoxOffice() throws StopReadingException {
-        return (int) readField("сборы в США", Scanner::nextInt);
+        return readField("сборы в США", Integer::parseInt, new Min(0));
     }
 
     public MovieGenre readGenre() throws StopReadingException {
         String fieldName = String.format("жанр: %s", Arrays.toString(MovieGenre.values()));
-        scanner.nextLine();
-        return (MovieGenre) readField(fieldName, (scanner) -> MovieGenre.valueOf(scanner.nextLine()));
+        return readField(fieldName, MovieGenre::valueOf, new NotNull());
     }
 
     public Person readPerson() throws StopReadingException {
         String fieldName = String.format("цвет: %s", Arrays.toString(Color.values()));
         return new Person(
-                readName("имя оператора", false),
-                (LocalDateTime) readField("дата рождения", (scanner) -> LocalDateTime.parse(scanner.nextLine())),
-                (Color) readField(fieldName, (scanner) -> Color.valueOf(scanner.nextLine())),
+                readField("имя оператора", (e) -> e, new NotEmpty()),
+                readField("дата рождения", LocalDateTime::parse, new NotNull()),
+                readField(fieldName, Color::valueOf, new NotNull()),
                 new Location(
-                        (Integer) readField("X страны", Scanner::nextInt),
-                        (int) readField("Y страны", Scanner::nextInt),
-                        readName("название страны", true)
+                        readField("X страны", Integer::parseInt),
+                        readField("Y страны", Long::parseLong),
+                        readField("название страны", (e) -> e, new NotNull())
                 )
         );
     }
