@@ -11,6 +11,7 @@ public class Min implements Rule {
 
     @Override
     public void check(String val) throws CheckFailed {
+
         int v = Integer.parseInt(val);
         if (v < bound) {
             throw new CheckFailed(String.format("Значение должно быть больше %s", bound));

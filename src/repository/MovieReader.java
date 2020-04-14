@@ -6,6 +6,7 @@ import models.*;
 import rules.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -26,8 +27,8 @@ public class MovieReader {
      * метод для считывания поля, с возможностью повторного ввода, если пользователь ошибся
      *
      * @param fieldName подсказка для пользователя
-     * @param callback  метод, которым считываем поле(scanner::<methodName>)
-     * @return возвращает объект, поэтому надо кастить в нужный тип
+     * @param callback  метод, которым считываем поле)\
+     * @return возвращает значение приведенное к нужному типу
      * @throws StopReadingException выбрасывается, если пользователь ввел break, остановка считывания
      */
     private <T> T readField(String fieldName, Function<String, T> callback, Rule... rules) throws StopReadingException {
@@ -45,22 +46,18 @@ public class MovieReader {
                 for (Rule rule : rules) {
                         rule.check(res);
                 }
-                if (res.equals("")) {
-                    return null;
-                }
                 val = callback.apply(res);
                 break;
             } catch (CheckFailed e) {
                 if (verbose) {
                     System.out.println(e.getMessage());
                 }
-            } catch (IllegalArgumentException | NoSuchElementException e) {
+            } catch (IllegalArgumentException | NoSuchElementException | DateTimeParseException e) {
                 if (verbose) {
                     System.out.println("Попробуйте еще раз");
                 }
             }
         }
-
         return val;
     }
 

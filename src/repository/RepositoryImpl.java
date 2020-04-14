@@ -30,6 +30,7 @@ public class RepositoryImpl implements Repository {
     @Override
     public void add(Movie movie) {
         this.movies.add(movie);
+        System.out.println("фильм добавлен");
     }
 
     @Override
@@ -37,6 +38,7 @@ public class RepositoryImpl implements Repository {
         movies.removeIf(movie1 -> movie1.getId() == id);
         movie.setId(id);
         movies.add(movie);
+        System.out.println("фильм обновлен");
     }
 
     @Override
